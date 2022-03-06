@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HexType</title>
+    <style>
+        html, body {
+            margin: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            background: #222;
+            font-family: sans-serif;
+            user-select: none;
+        }
+
+        #worldElem {
+            position: absolute;
+        }
+
+        #ui {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 72px;
+            font-size: 42px;
+            color: #eee;
+            background: black;
+        }
+        #currentWordContainer {
+            float: left;
+            margin: 10px;
+        }
+        #statsContainer {
+            margin: 10px;
+            float: right;
+        }
+        .dead #ui {
+            color: red;
+        }
+        .won #ui {
+            color: green;
+        }
+        .caret {
+            animation: blink 1.06s steps(1, end) infinite;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+        .dead .caret, .won .caret {
+            display: none;
+        }
+
+        .cell {
+            position: absolute;
+        }
+        .hex {
+            transition: 0.2s;
+            font-size: 160px;
+            color: #333;
+        }
+        .visible > .hex {
+            color: #555;
+        }
+        .active > .hex {
+            color: #44a;
+        }
+        .inCombat > .hex {
+            -webkit-text-fill-color: transparent;
+            -webkit-background-clip: text !important;
+        }
+        .dead .active > .hex {
+            color: #500;
+        }
+        .won .active > .hex {
+            color: #050;
+        }
+        .hurt .active > .hex {
+            transition: none;
+            color: #d30;
+        }
+
+        .annotation {
+            display: none;
+            position: absolute;
+            font-size: 20px;
+            font-weight: bold;
+            width: 95px;
+            text-align: center;
+            left: 15px;
+        }
+        .enemy {
+            top: 70px;
+            color: #fa6;
+        }
+        .inCombat > .enemy, .visible > .enemy {
+            display: block;
+        }
+        .heat {
+            top: 140px;
+            color: #eee;
+        }
+        .visible > .heat {
+            display: block;
+        }
+
+        .label {
+            position: absolute;
+            overflow: hidden;
+            font-size: 42px;
+            color: #eee;
+        }
+        .label.left {
+            text-align: right;
+        }
+        .label.inCombat {
+            color: #fa6;
+        }
+    </style>
+</head>
+<body>
+    <div id="worldElem">
+        <div id="cellsContainer"></div>
+        <div id="labelsContainer"></div>
+    </div>
+    <div id="ui">
+        <div id="currentWordContainer">
+            <span id="promptElem">></span>
+            <span id="currentWordElem"></span><span class="caret">|</span>
+        </div>
+        <div id="statsContainer">
+            <span id="timeElem"></span> |
+            Health: <span id="healthElem"></span> |
+            XP: <span id="xpElem"></span> |
+            Level: <span id="levelElem"></span>
+        </div>
+    </div>
+    <script src="words.js"></script>
+    <script src="hextype.js"></script>
+</body>
+</html>
