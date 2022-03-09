@@ -34,6 +34,17 @@
             margin: 10px;
             float: right;
         }
+        #help {
+            font-size: 32px;
+            color: #ddd;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            white-space: pre-wrap;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+        }
         .dead #ui {
             color: red;
         }
@@ -120,6 +131,11 @@
         <div id="cellsContainer"></div>
         <div id="labelsContainer"></div>
     </div>
+    <div id="help">You are the purple hexagon.
+Type the word on a cell and hit space or enter to move there.
+The white number on a cell is the sum of enemy levels of its surrounding cells.
+Defeat all enemies to win.
+</div>
     <div id="ui">
         <div id="currentWordContainer">
             <span id="promptElem">></span>

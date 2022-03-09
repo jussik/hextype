@@ -145,9 +145,9 @@ function addPlayerXp(amount) {
     }
 }
 function damageCell(cell) {
-    cell.health -= player.level;
+    cell.health--;
     if (cell.health > 0) {
-        cell.combatWord = getRandomWord();
+        cell.combatWord = getWord(cell.enemy);
         cell.element.classList.add("inCombat");
         cell.inCombat = true;
         // 30% to 80% visible
@@ -164,12 +164,18 @@ function damageCell(cell) {
 
 const rand = seedRand(SEED);
 shuffle(words);
+const wordsByDifficulty = []; // 0 to 5 based on length
+for (let word of words) {
+    let diff = word.length - 2;
+    diff = diff / 2 >> 0;
+    if (diff > 5)
+        diff = 5;
+    (wordsByDifficulty[diff] ??= []).push(word);
+}
 
-// getRandomWord returns any random word not on the grid
-const randMin = COLUMNS * ROWS;
-function getRandomWord() {
-    const ix = randMin + Math.floor(rand() * (words.length - randMin));
-    return words[ix];
+// getWord returns any random word not on the grid
+function getWord(difficulty) {
+    return wordsByDifficulty[difficulty].pop();
 }
 
 
@@ -208,6 +214,8 @@ for (let y = 0; y < ROWS; y++) {
         if (isEnemyAllowed(x, y)) {
             enemy = enemies.shift();
         }
+        // cell word difficulty goes up by a level every 2 cells from edge
+        const wordDiff = Math.min(6,y,ROWS-y-1,x,COLUMNS-x-1) / 2 >> 0;
         cells.push({
             x: x,
             y: y,
@@ -216,6 +224,7 @@ for (let y = 0; y < ROWS; y++) {
             heat: 0,
             visible: false,
             element: null,
+            word: getWord(wordDiff),
             combatWord: null,
             inCombat: false
         });
@@ -298,7 +307,7 @@ function tryMovePlayer(targetX, targetY) {
         if (isValid(...coords)) {
             const index = coordsToIndex(...coords);
             const adjCell = cells[index];
-            const word = adjCell.combatWord ?? words[index];
+            const word = adjCell.combatWord ?? adjCell.word;
             nextWordCoords[word] = coords;
             drawOffsetLabel(player.x, player.y, i, word, adjCell.inCombat ? "inCombat" : "");
         }
@@ -325,19 +334,36 @@ function updateTime() {
     timeElem.textContent = `${minutes}:${seconds}`;
     time++;
 }
-const timeUpdater = setInterval(updateTime, 1000);
-updateTime();
+
+let timeUpdater = null;
+function startTimer() {
+    if (timeUpdater)
+        return;
+    
+    timeUpdater = setInterval(updateTime, 1000);
+    updateTime();
+}
+
+function isWordChar(key) {
+    if (key === "-")
+        return true;
+    if (key.length !== 1)
+        return false;
+    const charCode = key.toLowerCase().charCodeAt(0);
+    return charCode >= 97 && charCode <= 122;
+}
 
 let currentWord = "";
+let helpVisible = true;
 window.addEventListener("keydown", ev => {
     if (!player.alive)
         return;
-
-    //console.log(ev);
-    if (ev.keyCode >= 65 && ev.keyCode <= 90 || ev.key === "-") {
+    
+    if (isWordChar(ev.key)) {
         // letter or hyphen
         currentWord += ev.key.toLowerCase();
-    } else if (ev.keyCode === 32 || ev.keyCode === 13) {
+        startTimer();
+    } else if (ev.code === "Space" || ev.key === "Enter") {
         // space or enter
         if (currentWord) {
             const targetCoords = nextWordCoords[currentWord];
@@ -347,10 +373,16 @@ window.addEventListener("keydown", ev => {
                 damagePlayer(1);
             currentWord = "";
         }
-    } else if (ev.keyCode === 46 || (ev.ctrlKey && ev.keyCode === 8)) {
+        
+        if (helpVisible) {
+            help.style.display = "none";
+            helpVisible = false;
+            startTimer();
+        }
+    } else if (ev.key === "Delete" || (ev.ctrlKey && ev.key === "Backspace")) {
         // delete or ctrl+backspace - clear whole word
         currentWord = "";
-    } else if (ev.keyCode === 8) {
+    } else if (ev.key === "Backspace") {
         // backspace - remove last letter
         if (currentWord)
             currentWord = currentWord.substr(0, currentWord.length - 1);
