@@ -2,24 +2,22 @@
 import { Map } from "./map.js";
 import { isWordChar } from "./utils.js";
 import { Ui } from "./ui.js";
+import { GameState } from "./gameState.js";
 
 export class Game {
     events;
-    /** @deprecated use events */
-    ui;
-    /** @deprecated use events */
-    prompt;
-    /** @deprecated use events */
     map;
+    state = GameState.Loading;
     
     constructor() {
         this.events = new EventTarget();
     }
 
     start(columns, rows, seed) {
-        this.ui = new Ui(this);
-        this.prompt = new WordPrompt(this);
+        new Ui(this);
+        new WordPrompt(this);
         this.map = new Map(this, columns, rows, seed);
+        this.map.create();
         
         window.addEventListener("keydown", ev => this.onKeydown(ev));
     }
@@ -39,7 +37,16 @@ export class Game {
             this.events.dispatchEvent(new Event(InputEvent.Backspace));
         }
     }
+
+    setState(state) {
+        this.state = state;
+        this.events.dispatchEvent(new Event(GameEvents.StateChanged));
+    }
 }
+
+export const GameEvents = {
+    StateChanged: "game.stateChanged"
+};
 
 export const InputEvent = {
     Character: "input.character",

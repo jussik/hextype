@@ -46,7 +46,6 @@ export class Cell extends GameObject {
         }
         this.events.dispatchEvent(new CellEvent(CellEvents.Damaged, this));
     }
-
 }
 
 export const CellEvents = {

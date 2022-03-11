@@ -33,7 +33,7 @@ export class Player extends GameObject {
     addPlayerXp(amount) {
         this.xp += amount;
         this.level = (this.xp / 10 >> 0) + 1;
-        this.game.events.dispatchEvent(new PlayerEvent(PlayerEvents.GainedXp, this));
+        this.events.dispatchEvent(new PlayerEvent(PlayerEvents.GainedXp, this));
     }
 }
 

@@ -2,7 +2,9 @@
 import { PlayerEvents } from "./player.js";
 import { GameObject } from "./gameObject.js";
 import { CellEvents } from "./cell.js";
-import { MapEvents, MapState } from "./map.js";
+import { MapEvents} from "./map.js";
+import { GameState } from "./gameState.js";
+import { GameEvents } from "./game.js";
 
 export class Ui extends GameObject {
     body = document.body;
@@ -72,18 +74,18 @@ export class Ui extends GameObject {
             }
         });
 
-        this.events.addEventListener(MapEvents.StateChanged, ev => {
-            switch (ev.map.state) {
-                case MapState.Created:
-                    for (let cell of ev.map.cells) {
+        this.events.addEventListener(GameEvents.StateChanged, () => {
+            switch (this.state) {
+                case GameState.Created:
+                    for (let cell of this.game.map.cells) {
                         this.drawCell(cell);
                     }
                     break;
-                case MapState.Won:
+                case GameState.Won:
                     this.body.classList.add("won");
                     this.promptElem.textContent = ":)";
                     break;
-                case MapState.Failed:
+                case GameState.Failed:
                     this.body.classList.add("dead");
                     this.promptElem.textContent = ":(";
                     break;

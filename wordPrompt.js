@@ -1,6 +1,6 @@
 ﻿import { InputEvent } from "./game.js";
 import { GameObject } from "./gameObject.js";
-import { MapState } from "./map.js";
+import { GameState } from "./gameState.js";
 
 export class WordPrompt extends GameObject {
     currentWord = "";
@@ -9,12 +9,12 @@ export class WordPrompt extends GameObject {
         super(game);
         
         game.events.addEventListener(InputEvent.Character, ev => {
-            if (this.game.map.state === MapState.Playing)
+            if (this.state === GameState.Playing)
                 this.setCurrentWord(this.currentWord + ev.key);
         });
-        game.events.addEventListener(InputEvent.Accept, ev => this.onAccept());
-        game.events.addEventListener(InputEvent.Backspace, ev => this.setCurrentWord(this.currentWord.slice(0, -1)));
-        game.events.addEventListener(InputEvent.Clear, ev => this.setCurrentWord(""));
+        game.events.addEventListener(InputEvent.Accept, () => this.onAccept());
+        game.events.addEventListener(InputEvent.Backspace, () => this.setCurrentWord(this.currentWord.slice(0, -1)));
+        game.events.addEventListener(InputEvent.Clear, () => this.setCurrentWord(""));
     }
 
     onAccept() {
