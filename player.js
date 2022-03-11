@@ -1,48 +1,68 @@
-﻿export class Player {
-    game;
+﻿import { GameObject } from "./gameObject.js";
+
+export class Player extends GameObject {
     x;
     y;
     level;
     health;
     xp;
-    maxXp;
-    alive;
-    won;
+    maxXp; // TODO: move to Game (or Map)
+    alive; // TODO: move to Game
+    won; // TODO: move to Game
 
-    constructor(opts) {
+    constructor(game, opts) {
+        super(game);
+        
+        // TODO: explicit arguments
         Object.assign(this, opts);
-
-        this.damagePlayer(0);
-        this.addPlayerXp(0);
+    }
+    
+    move(x, y){
+        this.x = x;
+        this.y = y;
+        this.events.dispatchEvent(new PlayerEvent(PlayerEvents.Moved, this));
     }
 
     damagePlayer(amount) {
         const player = this;
-        player.health -= amount;
-        this.game.ui.healthElem.textContent = player.health;
-        if (amount <= 0)
+        
+        if (player.health <= 0)
             return;
-
-        document.body.classList.add("hurt");
-        setTimeout(() => document.body.classList.remove("hurt"), 10);
+        
+        player.health -= amount;
 
         if (player.health <= 0) {
+            // TODO: move to Game
             player.alive = false;
-            document.body.classList.add("dead");
-            this.game.ui.promptElem.textContent = ":(";
         }
+        
+        this.events.dispatchEvent(new PlayerEvent(PlayerEvents.Hurt, this));
     }
 
     addPlayerXp(amount) {
         const player = this;
         player.xp += amount;
-        this.game.ui.xpElem.textContent = player.xp;
         player.level = (player.xp / 10 >> 0) + 1;
-        this.game.ui.levelElem.textContent = player.level;
+        
         if (player.xp >= this.maxXp) {
+            // TODO: move to Game
             player.won = true;
-            document.body.classList.add("won");
-            this.game.ui.promptElem.textContent = ":)";
         }
+        
+        this.game.events.dispatchEvent(new PlayerEvent(PlayerEvents.GainedXp, this));
+    }
+}
+
+export const PlayerEvents = {
+    Moved: "player.moved",
+    Hurt: "player.hurt",
+    GainedXp: "player.gainedXp"
+}
+
+export class PlayerEvent extends Event {
+    player;
+    constructor(type, player) {
+        super(type);
+        this.player = player;
     }
 }

@@ -1,21 +1,24 @@
 ﻿import { seedRand, shuffleArray } from "./utils.js";
 import { words } from "./words.js";
-import { Cell } from "./cell.js";
+import { Cell, CellEvents } from "./cell.js";
 import { Player } from "./player.js";
+import { InputEvent } from "./game.js";
+import { WordEvents } from "./wordPrompt.js";
+import { GameObject } from "./gameObject.js";
 
-export class Map {
-    game;
+export class Map extends GameObject {
     columns;
     rows;
     seed;
     rand;
     player;
     cells;
-    nextWordCoords;
+    wordTargets;
     wordsByDifficulty;
 
     constructor(game, columns, rows, seed) {
-        this.game = game;
+        super(game);
+        
         this.columns = columns;
         this.rows = rows;
         this.seed = seed;
@@ -23,7 +26,7 @@ export class Map {
         this.rand = seedRand(seed);
         shuffleArray(words, this.rand);
 
-        this.nextWordCoords = {};
+        this.wordTargets = {};
         this.time = 0;
         this.timeUpdater = null;
 
@@ -76,9 +79,7 @@ export class Map {
                 }
                 // cell word difficulty goes up by a level every 2 cells from edge
                 const wordDiff = Math.min(6, y, rows - y - 1, x, columns - x - 1) / 2 >> 0;
-                this.cells.push(new Cell({
-                    game: this.game,
-                    map: this,
+                this.cells.push(new Cell(this.game, {
                     x: x,
                     y: y,
                     enemy: enemy,
@@ -103,23 +104,11 @@ export class Map {
                         cell.heat += this.cells[this.coordsToIndex(nx, ny)].enemy;
                     }
                 }
-                cell.element = cell.drawCell();
             }
         }
 
-        // reveal border cells
-        for (let x = 0; x < columns; x++) {
-            this.cells[this.coordsToIndex(x, 0)].show();
-            this.cells[this.coordsToIndex(x, rows - 1)].show();
-        }
-        for (let y = 0; y < rows; y++) {
-            this.cells[this.coordsToIndex(0, y)].show();
-            this.cells[this.coordsToIndex(columns - 1, y)].show();
-        }
-
         // create player
-        this.player = new Player({
-            game: this.game,
+        this.player = new Player(this.game, {
             x: 0,
             y: 0,
             level: 1,
@@ -130,6 +119,34 @@ export class Map {
             won: false
         });
 
+        this.events.addEventListener(InputEvent.Character, () => this.startTimer());
+        this.events.addEventListener(WordEvents.Accepted, ev => this.onWordAccepted(ev.word));
+        this.events.addEventListener(CellEvents.Shown, ev => {
+            if (ev.cell.heat === 0) {
+                for (let i = 0; i < 6; i++) {
+                    const [nx, ny] = this.offsetCoords(ev.cell.x, ev.cell.y, i);
+                    if (this.isValidCell(nx, ny)) {
+                        const nextCell = this.cells[this.coordsToIndex(nx, ny)];
+                        if (!nextCell.visible) {
+                            nextCell.show();
+                        }
+                    }
+                }
+            }
+        });
+
+        this.events.dispatchEvent(new MapEvent(MapEvents.Created, this));
+
+        // reveal border cells
+        for (let x = 0; x < columns; x++) {
+            this.cells[this.coordsToIndex(x, 0)].show();
+            this.cells[this.coordsToIndex(x, rows - 1)].show();
+        }
+        for (let y = 0; y < rows; y++) {
+            this.cells[this.coordsToIndex(0, y)].show();
+            this.cells[this.coordsToIndex(columns - 1, y)].show();
+        }
+        
         this.tryMovePlayer(0, 0);
     }
 
@@ -139,7 +156,6 @@ export class Map {
 
     static offsetX = [0, 1, 0, -1, -1, -1];
     static offsetY = [-1, 0, 1, 1, 0, -1];
-
     offsetCoords(x, y, pos) {
         if (y % 2 === 0 || pos === 1 || pos === 4)
             return [x + Map.offsetX[pos], y + Map.offsetY[pos]];
@@ -177,37 +193,42 @@ export class Map {
 
         if (canMove) {
             // update player
-            this.player.x = targetX;
-            this.player.y = targetY;
-            for (let act of document.getElementsByClassName("active")) {
-                act.classList.remove("active");
-            }
-            targetCell.element.classList.add("active");
             targetCell.show();
-
-            // update camera
-            this.game.ui.worldElem.style.left = "calc(50vw - " + (targetCell.element.offsetLeft + 63) + "px";
-            this.game.ui.worldElem.style.top = "calc(50vh - " + (targetCell.element.offsetTop + 107) + "px";
+            this.player.move(targetX, targetY);
         }
 
-        // draw/update adjacent cell labels
-        this.game.ui.labelsContainer.innerHTML = "";
-        this.nextWordCoords = {};
+        // update possible word targets
+        this.wordTargets = {};
         for (let i = 0; i < 6; i++) {
             const coords = this.offsetCoords(this.player.x, this.player.y, i);
             if (this.isValidCell(...coords)) {
                 const index = this.coordsToIndex(...coords);
                 const adjCell = this.cells[index];
                 const word = adjCell.combatWord ?? adjCell.word;
-                this.nextWordCoords[word] = coords;
-                adjCell.drawOffsetLabel(this.player.x, this.player.y, i, word);
+                this.wordTargets[word] = {
+                    x: this.player.x,
+                    y: this.player.y,
+                    cell: adjCell,
+                    offset: i,
+                    word: word
+                };
             }
         }
+        this.events.dispatchEvent(new MapEvent(MapEvents.WordTargetsUpdated, this));
 
         return canMove;
     }
 
+    onWordAccepted(word) {
+        const target = this.wordTargets[word];
+        if (target)
+            this.tryMovePlayer(target.cell.x, target.cell.y);
+        else
+            this.player.damagePlayer(1);
+    }
+
     updateTime() {
+        // TODO: dedicated game state enum
         if (!this.player.alive || this.player.won) {
             clearInterval(this.timeUpdater);
             return;
@@ -217,6 +238,7 @@ export class Map {
         let minutes = Math.floor(this.time / 60);
         if (seconds < 10)
             seconds = "0" + seconds;
+        // TODO: move to Ui
         this.game.ui.timeElem.textContent = `${minutes}:${seconds}`;
         this.time++;
     }
@@ -227,5 +249,18 @@ export class Map {
 
         this.timeUpdater = setInterval(() => this.updateTime(), 1000);
         this.updateTime();
+    }
+}
+
+export const MapEvents = {
+    Created: "map.create",
+    WordTargetsUpdated: "map.wordTargetsUpdated"
+}
+
+export class MapEvent extends Event {
+    map;
+    constructor(type, map) {
+        super(type);
+        this.map = map;
     }
 }
