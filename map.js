@@ -213,10 +213,18 @@ export class Map extends GameObject {
 
     onWordAccepted(word) {
         const target = this.wordTargets[word];
-        if (target)
+        if (target) {
             this.tryMovePlayer(target.cell.x, target.cell.y);
-        else
-            this.player.damagePlayer(1);
+        } else {
+            // take damage equivalent to fighting strongest in combat enemy in range, or 1 if not in combat
+            let dmg = 1;
+            for (let { cell } of Object.values(this.wordTargets)) {
+                if (cell.inCombat) {
+                    dmg = Math.max(dmg, cell.enemy - this.player.level);
+                }
+            }
+            this.player.damagePlayer(dmg);
+        }
     }
 
     stepTime() {
