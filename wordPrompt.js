@@ -9,7 +9,7 @@ export class WordPrompt extends GameObject {
         super(game);
         
         game.events.addEventListener(InputEvent.Character, ev => {
-            if (this.state === GameState.Playing)
+            if (this.state === GameState.Playing || this.state === GameState.Created)
                 this.setCurrentWord(this.currentWord + ev.key);
         });
         game.events.addEventListener(InputEvent.Accept, () => this.onAccept());

@@ -6,6 +6,8 @@ import { GameState } from "./gameState.js";
 
 export class Game {
     events;
+    ui;
+    prompt;
     map;
     state = GameState.Loading;
     
@@ -14,8 +16,8 @@ export class Game {
     }
 
     start(columns, rows, seed) {
-        new Ui(this);
-        new WordPrompt(this);
+        this.ui = new Ui(this);
+        this.prompt = new WordPrompt(this);
         this.map = new Map(this, columns, rows, seed);
         this.map.create();
         

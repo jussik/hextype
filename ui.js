@@ -24,6 +24,7 @@ export class Ui extends GameObject {
         
         this.events.addEventListener(WordEvents.Changed, ev => {
             this.currentWordElem.textContent = ev.word;
+            this.updateLabels();
         });
         
         let helpVisible = true;
@@ -91,12 +92,7 @@ export class Ui extends GameObject {
                     break;
             }
         });
-        this.events.addEventListener(MapEvents.WordTargetsUpdated, ev => {
-            this.labelsContainer.innerHTML = "";
-            for (let target of Object.values(ev.map.wordTargets)) {
-                this.drawOffsetLabel(target);
-            }
-        });
+        this.events.addEventListener(MapEvents.WordTargetsUpdated, () => this.updateLabels());
         this.events.addEventListener(MapEvents.TimeUpdated, ev => {
             let seconds = ev.map.time % 60;
             let minutes = Math.floor(ev.map.time / 60);
@@ -142,9 +138,14 @@ export class Ui extends GameObject {
         this.cellsContainer.appendChild(container);
     }
 
+    updateLabels() {
+        this.labelsContainer.innerHTML = "";
+        for (let target of Object.values(this.game.map.wordTargets)) {
+            this.drawOffsetLabel(target);
+        }
+    }
     drawOffsetLabel(target) {
         const { x, y, offset, word, cell } = target;
-        
         if (!word)
             return;
 
@@ -167,7 +168,33 @@ export class Ui extends GameObject {
         let top = (y + yPos) * 91;
         div.style.top = top + "px";
 
-        div.textContent = word;
+        let current = this.game.prompt.currentWord;
+        if (current) {
+            const match = this.commonPrefix(word, current);
+            
+            if (match.length > 0) {
+                const prefix = document.createElement("span");
+                prefix.textContent = word.slice(0, match.length);
+                prefix.className = "match";
+                div.appendChild(prefix);
+            }
+
+            if (match.length < current.length) {
+                const rest = document.createElement("span");
+                rest.textContent = word.slice(match.length, current.length);
+                rest.className = "non-match";
+                div.appendChild(rest);
+            }
+
+            if (current.length < word.length) {
+                const rest = document.createElement("span");
+                rest.textContent = word.slice(current.length);
+                div.appendChild(rest);
+            }
+        } else {
+            div.textContent = word;
+        }
+        
         div.className = "label";
         if (offset > 2)
             div.classList.add("left");
@@ -175,5 +202,17 @@ export class Ui extends GameObject {
             div.classList.add("inCombat");
         
         this.labelsContainer.appendChild(div);
+    }
+    
+    commonPrefix(a, b) {
+        let len = Math.min(a.length, b.length);
+        while (len > 0) {
+            a = a.substring(0, len);
+            b = b.substring(0, len);
+            if (a === b)
+                return a;
+            len--;
+        }
+        return "";
     }
 }
