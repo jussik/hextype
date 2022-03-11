@@ -1,23 +1,30 @@
 ﻿import { GameObject } from "./gameObject.js";
 
 export class Cell extends GameObject {
+    map;
     x;
     y;
     enemy;
     health;
     heat;
     visible;
-    /** @deprecated */
-    element;
     word;
     combatWord;
     inCombat;
 
-    constructor(game, opts) {
+    constructor(game, map, x, y, word, enemy) {
         super(game);
-        
-        // TODO: explicit arguments
-        Object.assign(this, opts);
+
+        this.map = map;
+        this.x = x;
+        this.y = y;
+        this.enemy = enemy;
+        this.health = enemy;
+        this.heat = 0;
+        this.visible = false;
+        this.word = word;
+        this.combatWord = null;
+        this.inCombat = false;
     }
 
     show() {
@@ -31,7 +38,7 @@ export class Cell extends GameObject {
     damageCell() {
         this.health--;
         if (this.health > 0) {
-            this.combatWord = this.game.map.getWord(this.enemy);
+            this.combatWord = this.map.getWord(this.enemy);
             this.inCombat = true;
         } else {
             this.combatWord = null;

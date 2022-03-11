@@ -1,10 +1,18 @@
 ﻿import { seedRand, shuffleArray } from "./utils.js";
 import { words } from "./words.js";
 import { Cell, CellEvents } from "./cell.js";
-import { Player } from "./player.js";
+import { Player, PlayerEvents } from "./player.js";
 import { InputEvent } from "./game.js";
 import { WordEvents } from "./wordPrompt.js";
 import { GameObject } from "./gameObject.js";
+
+export const MapState = {
+    Loading: 0,
+    Created: 1,
+    Playing: 2,
+    Won: 3,
+    Failed: 4
+};
 
 export class Map extends GameObject {
     columns;
@@ -12,9 +20,12 @@ export class Map extends GameObject {
     seed;
     rand;
     player;
-    cells;
-    wordTargets;
-    wordsByDifficulty;
+    state = MapState.Loading;
+    cells = [];
+    wordTargets = {};
+    time = 0;
+    timeUpdater = null;
+    wordsByDifficulty = [];
 
     constructor(game, columns, rows, seed) {
         super(game);
@@ -26,12 +37,7 @@ export class Map extends GameObject {
         this.rand = seedRand(seed);
         shuffleArray(words, this.rand);
 
-        this.wordTargets = {};
-        this.time = 0;
-        this.timeUpdater = null;
-
-        // prepare words
-        this.wordsByDifficulty = []; // 0 to 5 based on length
+        // prepare words, 0 to 5 based on length
         for (let word of words) {
             let diff = word.length - 2;
             diff = diff / 2 >> 0;
@@ -70,7 +76,6 @@ export class Map extends GameObject {
         shuffleArray(enemies, this.rand);
 
         // prepare cells
-        this.cells = [];
         for (let y = 0; y < rows; y++) {
             for (let x = 0; x < columns; x++) {
                 let enemy = 0;
@@ -79,18 +84,7 @@ export class Map extends GameObject {
                 }
                 // cell word difficulty goes up by a level every 2 cells from edge
                 const wordDiff = Math.min(6, y, rows - y - 1, x, columns - x - 1) / 2 >> 0;
-                this.cells.push(new Cell(this.game, {
-                    x: x,
-                    y: y,
-                    enemy: enemy,
-                    health: enemy,
-                    heat: 0,
-                    visible: false,
-                    element: null,
-                    word: this.getWord(wordDiff),
-                    combatWord: null,
-                    inCombat: false
-                }));
+                this.cells.push(new Cell(this.game, this, x, y, this.getWord(wordDiff), enemy));
             }
         }
 
@@ -108,19 +102,20 @@ export class Map extends GameObject {
         }
 
         // create player
-        this.player = new Player(this.game, {
-            x: 0,
-            y: 0,
-            level: 1,
-            health: 10,
-            xp: 0,
-            maxXp: this.maxXp,
-            alive: true,
-            won: false
-        });
+        this.player = new Player(this.game);
 
-        this.events.addEventListener(InputEvent.Character, () => this.startTimer());
+        this.events.addEventListener(InputEvent.Character, () => this.start());
         this.events.addEventListener(WordEvents.Accepted, ev => this.onWordAccepted(ev.word));
+        this.events.addEventListener(PlayerEvents.Hurt, ev => {
+            if (this.player.health <= 0) {
+                this.setState(MapState.Failed);
+            }
+        });
+        this.events.addEventListener(PlayerEvents.GainedXp, ev => {
+            if (this.player.xp >= this.maxXp) {
+                this.setState(MapState.Won);
+            }
+        });
         this.events.addEventListener(CellEvents.Shown, ev => {
             if (ev.cell.heat === 0) {
                 for (let i = 0; i < 6; i++) {
@@ -135,7 +130,7 @@ export class Map extends GameObject {
             }
         });
 
-        this.events.dispatchEvent(new MapEvent(MapEvents.Created, this));
+        this.setState(MapState.Created);
 
         // reveal border cells
         for (let x = 0; x < columns; x++) {
@@ -147,7 +142,13 @@ export class Map extends GameObject {
             this.cells[this.coordsToIndex(columns - 1, y)].show();
         }
         
+        // set initial position
         this.tryMovePlayer(0, 0);
+    }
+    
+    setState(state) {
+        this.state = state;
+        this.events.dispatchEvent(new MapEvent(MapEvents.StateChanged, this));
     }
 
     isValidCell(x, y) {
@@ -227,34 +228,29 @@ export class Map extends GameObject {
             this.player.damagePlayer(1);
     }
 
-    updateTime() {
-        // TODO: dedicated game state enum
-        if (!this.player.alive || this.player.won) {
+    stepTime() {
+        if (this.state !== MapState.Playing) {
             clearInterval(this.timeUpdater);
             return;
         }
 
-        let seconds = this.time % 60;
-        let minutes = Math.floor(this.time / 60);
-        if (seconds < 10)
-            seconds = "0" + seconds;
-        // TODO: move to Ui
-        this.game.ui.timeElem.textContent = `${minutes}:${seconds}`;
         this.time++;
+        
+        this.events.dispatchEvent(new MapEvent(MapEvents.TimeUpdated, this));
     }
 
-    startTimer() {
-        if (this.timeUpdater)
-            return;
-
-        this.timeUpdater = setInterval(() => this.updateTime(), 1000);
-        this.updateTime();
+    start() {
+        if (this.state === MapState.Created) {
+            this.setState(MapState.Playing);
+            this.timeUpdater = setInterval(() => this.stepTime(), 1000);
+        }
     }
 }
 
 export const MapEvents = {
-    Created: "map.create",
-    WordTargetsUpdated: "map.wordTargetsUpdated"
+    StateChanged: "map.create",
+    WordTargetsUpdated: "map.wordTargetsUpdated",
+    TimeUpdated: "map.timeUpdated"
 }
 
 export class MapEvent extends Event {

@@ -2,7 +2,7 @@
 import { PlayerEvents } from "./player.js";
 import { GameObject } from "./gameObject.js";
 import { CellEvents } from "./cell.js";
-import { MapEvents } from "./map.js";
+import { MapEvents, MapState } from "./map.js";
 
 export class Ui extends GameObject {
     body = document.body;
@@ -48,43 +48,45 @@ export class Ui extends GameObject {
             this.healthElem.textContent = ev.player.health;
             this.body.classList.add("hurt");
             setTimeout(() => document.body.classList.remove("hurt"), 10);
-            
-            if (ev.player.health <= 0){
-                // TODO: use state changed event
-                this.body.classList.add("dead");
-                this.promptElem.textContent = ":(";
-            }
         });
         this.events.addEventListener(PlayerEvents.GainedXp, ev => {
             this.xpElem.textContent = ev.player.xp;
             this.levelElem.textContent = ev.player.level;
-            
-            if (ev.player.xp >= ev.player.maxXp) {
-                // TODO: use state changed event
-                this.body.classList.add("won");
-                this.promptElem.textContent = ":)";
-            }
         });
 
         this.events.addEventListener(CellEvents.Shown, ev => {
-            this.getCellElement(ev.cell).classList.add("visible");
+            if (ev.cell.visible) {
+                this.getCellElement(ev.cell).classList.add("visible");
+            }
         });
         this.events.addEventListener(CellEvents.Damaged, ev => {
             const elem = this.getCellElement(ev.cell);
             if (ev.cell.health > 0) {
                 elem.classList.add("inCombat");
                 // 30% to 80% visible
-                let dmg = ev.cell.health / ev.cell.enemy * 50 + 30
-                elem.querySelector(".hex").style = `background: -webkit-linear-gradient(#333 0%, #333 ${dmg}%, #555 ${dmg}%, #555);`
+                let dmg = (ev.cell.health / ev.cell.enemy * 50 + 30) >> 0;
+                elem.querySelector(".hex").style = `background: -webkit-linear-gradient(#333 0%, #333 ${dmg}%, #555 ${dmg}%, #555);`;
             } else {
                 elem.classList.remove("inCombat");
                 elem.querySelector(".hex").style = "";
             }
         });
 
-        this.events.addEventListener(MapEvents.Created, ev => {
-            for (let cell of ev.map.cells) {
-                this.drawCell(cell);
+        this.events.addEventListener(MapEvents.StateChanged, ev => {
+            switch (ev.map.state) {
+                case MapState.Created:
+                    for (let cell of ev.map.cells) {
+                        this.drawCell(cell);
+                    }
+                    break;
+                case MapState.Won:
+                    this.body.classList.add("won");
+                    this.promptElem.textContent = ":)";
+                    break;
+                case MapState.Failed:
+                    this.body.classList.add("dead");
+                    this.promptElem.textContent = ":(";
+                    break;
             }
         });
         this.events.addEventListener(MapEvents.WordTargetsUpdated, ev => {
@@ -92,6 +94,13 @@ export class Ui extends GameObject {
             for (let target of Object.values(ev.map.wordTargets)) {
                 this.drawOffsetLabel(target);
             }
+        });
+        this.events.addEventListener(MapEvents.TimeUpdated, ev => {
+            let seconds = ev.map.time % 60;
+            let minutes = Math.floor(ev.map.time / 60);
+            if (seconds < 10)
+                seconds = "0" + seconds;
+            this.timeElem.textContent = `${minutes}:${seconds}`;
         });
     }
     
