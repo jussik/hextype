@@ -85,10 +85,12 @@ export class Ui extends GameObject {
                 case GameState.Won:
                     this.body.classList.add("won");
                     this.promptElem.textContent = ":)";
+                    this.updateLabels();
                     break;
                 case GameState.Failed:
                     this.body.classList.add("dead");
                     this.promptElem.textContent = ":(";
+                    this.updateLabels();
                     break;
             }
         });
@@ -140,6 +142,9 @@ export class Ui extends GameObject {
 
     updateLabels() {
         this.labelsContainer.innerHTML = "";
+        if (this.game.state !== GameState.Created && this.game.state !== GameState.Playing)
+            return;
+        
         for (let target of Object.values(this.game.map.wordTargets)) {
             this.drawOffsetLabel(target);
         }
