@@ -142,12 +142,45 @@ export class Ui extends GameObject {
 
     updateLabels() {
         this.labelsContainer.innerHTML = "";
-        if (this.game.state !== GameState.Created && this.game.state !== GameState.Playing)
-            return;
         
-        for (let target of Object.values(this.game.map.wordTargets)) {
-            this.drawOffsetLabel(target);
+        if (this.state === GameState.Created || this.state === GameState.Playing) {
+            for (let target of Object.values(this.game.map.wordTargets)) {
+                this.drawOffsetLabel(target);
+            }
         }
+        
+        this.drawPlayerLabel();
+    }
+    drawPlayerLabel() {
+        const { x, y, health } = this.game.map.player;
+        
+        const div = document.createElement("div");
+        switch (this.state) {
+            case GameState.Won:
+                div.textContent = "😎";
+                break;
+            case GameState.Failed:
+                div.textContent = "😵";
+                break;
+            default:
+                const inCombat = this.labelsContainer.querySelector(".inCombat") != null;
+                if (health > 5) {
+                    div.textContent = inCombat ? "😠" : "🙂";
+                } else if (health > 2) {
+                    div.textContent = inCombat ? "😟" : "🙁";
+                } else {
+                    div.textContent = inCombat ? "😱" : "😰";
+                }
+                break;
+        }
+        
+        let left = x * 100 + (y % 2) * 50 + 14;
+        div.style.left = left + "px";
+        let top = (y + 1) * 91 - 6;
+        div.style.top = top + "px";
+
+        div.className = "label player";
+        this.labelsContainer.appendChild(div);
     }
     drawOffsetLabel(target) {
         const { x, y, offset, word, cell } = target;
