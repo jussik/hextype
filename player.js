@@ -24,7 +24,7 @@ export class Player extends GameObject {
     }
 
     damagePlayer(amount) {
-        if(this.health <= 0)
+        if (this.health <= 0)
             return;
         this.health -= amount;
         this.events.dispatchEvent(new PlayerEvent(PlayerEvents.Hurt, this));

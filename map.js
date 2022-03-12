@@ -175,7 +175,8 @@ export class Map extends GameObject {
             targetCell.damageCell();
             if (targetCell.health > 0) {
                 // target still alive, damage player for difference between levels
-                this.player.damagePlayer(targetCell.enemy - this.player.level);
+                if (targetCell.enemy > this.player.level)
+                    this.player.damagePlayer(targetCell.enemy - this.player.level);
                 canMove = false;
             } else {
                 // target dead
