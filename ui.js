@@ -9,6 +9,9 @@ import { GameEvents } from "./game.js";
 export class Ui extends GameObject {
     body = document.body;
     help = document.getElementById("help");
+    ending = document.getElementById("ending");
+    seedTarget = document.getElementById("seedTarget");
+    seedLink = document.getElementById("seedLink");
     promptElem = document.getElementById("promptElem");
     timeElem = document.getElementById("timeElem");
     xpElem = document.getElementById("xpElem");
@@ -85,12 +88,12 @@ export class Ui extends GameObject {
                 case GameState.Won:
                     this.body.classList.add("won");
                     this.promptElem.textContent = ":)";
-                    this.updateLabels();
+                    this.ended();
                     break;
                 case GameState.Failed:
                     this.body.classList.add("dead");
                     this.promptElem.textContent = ":(";
-                    this.updateLabels();
+                    this.ended();
                     break;
             }
         });
@@ -104,6 +107,15 @@ export class Ui extends GameObject {
         });
     }
     
+    ended() {
+        this.updateLabels();
+        
+        const seedStr = this.game.map.seed.toString(16);
+        this.seedTarget.textContent = seedStr;
+        this.seedLink.href += seedStr;
+        this.ending.style.display = "block";
+    }
+
     getCellElement(pos) {
         return this.cellsContainer.querySelector(`.cell-${pos.x}-${pos.y}`);
     }

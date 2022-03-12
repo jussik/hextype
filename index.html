@@ -34,7 +34,7 @@
             margin: 10px;
             float: right;
         }
-        #help {
+        #help, #ending {
             font-size: 32px;
             color: #ddd;
             position: fixed;
@@ -44,6 +44,15 @@
             white-space: pre-wrap;
             background: rgba(0,0,0,0.5);
             padding: 10px;
+        }
+        #ending {
+            display: none;
+        }
+        #ending > span {
+            user-select: all;
+        }
+        #ending > a {
+            color: #88f;
         }
         .dead #ui {
             color: red;
@@ -143,6 +152,7 @@ Type the word on a cell and hit space or enter to move there.
 The white number on a cell is the sum of enemy levels of its surrounding cells.
 Defeat all enemies to win.
 </div>
+    <div id="ending">Seed: <span id="seedTarget"></span> <a id="seedLink" href="?seed=">[retry]</a> <a href=".">[random]</a></div>
     <div id="ui">
         <div id="currentWordContainer">
             <span id="promptElem">></span>
