@@ -110,7 +110,7 @@ export class Ui extends GameObject {
     ended() {
         this.updateLabels();
         
-        const seedStr = this.game.map.seed.toString(16);
+        const seedStr = (+this.game.map.seed).toString(16);
         this.seedTarget.textContent = seedStr;
         this.seedLink.href += seedStr;
         this.ending.style.display = "block";

@@ -1,0 +1,175 @@
+﻿html, body {
+    margin: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    background: #222;
+    font-family: sans-serif;
+    user-select: none;
+}
+
+#worldElem {
+    position: absolute;
+}
+
+#ui {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 72px;
+    font-size: 42px;
+    color: #eee;
+    background: black;
+}
+
+#currentWordContainer {
+    float: left;
+    margin: 10px;
+}
+
+#statsContainer {
+    margin: 10px;
+    float: right;
+}
+
+#help, #ending {
+    font-size: 32px;
+    color: #ddd;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    white-space: pre-wrap;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 10px;
+}
+
+#ending {
+    display: none;
+}
+
+#ending > span {
+    user-select: all;
+}
+
+#ending > a {
+    color: #88f;
+}
+
+.dead #ui {
+    color: red;
+}
+
+.won #ui {
+    color: green;
+}
+
+.caret {
+    animation: blink 1.06s steps(1, end) infinite;
+}
+
+@keyframes blink {
+    50% {
+        opacity: 0;
+    }
+}
+
+.dead .caret, .won .caret {
+    display: none;
+}
+
+.cell {
+    position: absolute;
+}
+
+.hex {
+    transition: 0.2s;
+    font-size: 160px;
+    color: #333;
+}
+
+.visible > .hex {
+    color: #555;
+}
+
+.active > .hex {
+    color: #44a;
+}
+
+.inCombat > .hex {
+    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text !important;
+}
+
+.dead .active > .hex {
+    color: #500;
+}
+
+.won .active > .hex {
+    color: #050;
+}
+
+.hurt .active > .hex {
+    transition: none;
+    color: #d30;
+}
+
+.annotation {
+    display: none;
+    position: absolute;
+    font-size: 20px;
+    font-weight: bold;
+    width: 95px;
+    text-align: center;
+    left: 15px;
+}
+
+.enemy {
+    top: 70px;
+    color: #fa6;
+}
+
+.inCombat > .enemy, .visible > .enemy {
+    display: block;
+}
+
+.heat {
+    top: 140px;
+    color: #eee;
+}
+
+.visible > .heat {
+    display: block;
+}
+
+.label {
+    position: absolute;
+    overflow: hidden;
+    font-size: 42px;
+    color: #eee;
+}
+
+.label.left {
+    text-align: right;
+}
+
+.label.inCombat {
+    color: #fa6;
+}
+
+.label.player {
+    width: 100px;
+    text-align: center;
+}
+
+.label > .match {
+    color: #888;
+}
+
+.label > .non-match {
+    color: #d33;
+}
+
+.label.inCombat > .match {
+    color: #863;
+}
